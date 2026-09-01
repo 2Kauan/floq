@@ -1,8 +1,8 @@
-# FLOQ 📖✨
+# FLOQT 📖✨
 
 > Sua biblioteca digital pessoal de destaques literários. Capture frases, organize por livro e revisite suas reflexões — 100% no seu dispositivo.
 
-![FLOQ Preview](public/icons/icon-512.png)
+![FLOQT Preview](public/icons/icon-512.png)
 
 ---
 

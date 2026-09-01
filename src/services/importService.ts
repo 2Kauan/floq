@@ -85,7 +85,7 @@ export async function parseImportZip(file: File): Promise<ImportPreviewData> {
       const text = await file.text();
       return parseImportText(text);
     } catch {
-      throw new Error('Arquivo inválido. Selecione um arquivo .zip ou .json exportado pelo FLOQ.');
+      throw new Error('Arquivo inválido. Selecione um arquivo .zip ou .json exportado pelo FLOQT.');
     }
   }
 

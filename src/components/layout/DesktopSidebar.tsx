@@ -24,7 +24,7 @@ export function DesktopSidebar() {
         </div>
         <div>
           <h1 className="text-2xl font-serif font-bold text-ink tracking-wider">
-            FLOQ
+            FLOQT
           </h1>
           <p className="text-[11px] text-ink-muted">Biblioteca de destaques</p>
         </div>

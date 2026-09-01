@@ -97,19 +97,19 @@ export function SettingsPage() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col space-y-8 pb-12">
+    <div className="max-w-2xl mx-auto flex flex-col space-y-8 pb-12 animate-fade-in-up">
       {/* Title */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-serif font-bold text-ink tracking-tight">
           Ajustes & Biblioteca
         </h1>
         <p className="text-xs text-ink-muted mt-0.5">
-          Personalização, backup e restauração dos seus dados no FLOQ.
+          Personalização, backup e restauração dos seus dados no FLOQT.
         </p>
       </div>
 
       {/* Theme Selection */}
-      <section className="p-5 bg-surface border border-border rounded-xl space-y-3">
+      <section className="p-5 bg-surface border border-border rounded-xl space-y-3 shadow-2xs">
         <h2 className="text-sm font-semibold font-serif text-ink">Aparência</h2>
         <div className="grid grid-cols-3 gap-2">
           {themeOptions.map((opt) => {
@@ -120,7 +120,7 @@ export function SettingsPage() {
                 key={opt.value}
                 type="button"
                 onClick={() => setTheme(opt.value)}
-                className={`flex flex-col items-center justify-center p-3 rounded-lg border text-xs font-medium transition-all ${
+                className={`flex flex-col items-center justify-center p-3 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
                   isSelected
                     ? 'border-accent bg-accent/10 text-accent font-semibold shadow-2xs'
                     : 'border-border bg-bg text-ink-muted hover:text-ink hover:bg-bg/80'
@@ -135,7 +135,7 @@ export function SettingsPage() {
       </section>
 
       {/* Backup & Restore (Export / Import) */}
-      <section className="p-5 bg-surface border border-border rounded-xl space-y-4">
+      <section className="p-5 bg-surface border border-border rounded-xl space-y-4 shadow-2xs">
         <div>
           <h2 className="text-sm font-semibold font-serif text-ink">
             Backup e Restauração
@@ -185,7 +185,7 @@ export function SettingsPage() {
           <button
             type="button"
             onClick={() => setIsPasteModalOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs text-accent font-medium py-1 px-2 rounded-md hover:bg-bg transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-accent font-medium py-1 px-2 rounded-md hover:bg-bg transition-colors cursor-pointer"
           >
             <ClipboardPaste className="w-3.5 h-3.5" />
             <span>Restaurar colando texto JSON</span>
@@ -203,13 +203,13 @@ export function SettingsPage() {
       </section>
 
       {/* Privacy & Architecture Notice */}
-      <section className="p-5 bg-surface border border-border rounded-xl space-y-3">
+      <section className="p-5 bg-surface border border-border rounded-xl space-y-3 shadow-2xs">
         <div className="flex items-center gap-2 text-accent">
           <ShieldCheck className="w-5 h-5" />
           <h2 className="text-sm font-semibold font-serif text-ink">Privacidade Absoluta</h2>
         </div>
         <p className="text-xs text-ink-muted leading-relaxed">
-          O <strong>FLOQ</strong> funciona 100% no seu dispositivo. Sem login, sem servidores na nuvem e sem anúncios. Todos os seus livros e destaques residem no banco de dados local do seu navegador (IndexedDB).
+          O <strong>FLOQT</strong> funciona 100% no seu dispositivo. Sem login, sem servidores na nuvem e sem anúncios. Todos os seus livros e destaques residem no banco de dados local do seu navegador (IndexedDB).
         </p>
       </section>
 
@@ -220,7 +220,7 @@ export function SettingsPage() {
             <Feather className="w-4 h-4" />
           </div>
           <div>
-            <p className="font-serif font-bold text-ink text-sm">FLOQ</p>
+            <p className="font-serif font-bold text-ink text-sm">FLOQT</p>
             <p className="text-[11px]">Versão 1.0.0 • Biblioteca Digital Pessoal</p>
           </div>
         </div>

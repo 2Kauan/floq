@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'FLOQ',
-        short_name: 'FLOQ',
+        name: 'FLOQT',
+        short_name: 'FLOQT',
         description: 'Sua biblioteca de destaques literários',
         theme_color: '#E05A2B',
         background_color: '#F8F5EE',

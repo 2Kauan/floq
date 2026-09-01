@@ -72,7 +72,7 @@ export async function prepareExportData(): Promise<{
   const zipBlob = new Blob([rawZipBlob], { type: 'application/zip' });
 
   const dateStr = new Date().toISOString().split('T')[0];
-  const filename = `floq-backup-${dateStr}.zip`;
+  const filename = `floqt-backup-${dateStr}.zip`;
 
   return {
     exportPayload,
@@ -97,7 +97,7 @@ export async function exportLibrary(): Promise<ExportResult> {
         suggestedName: filename,
         types: [
           {
-            description: 'Backup FLOQ (.zip)',
+            description: 'Backup FLOQT (.zip)',
             accept: {
               'application/zip': ['.zip'],
             },
