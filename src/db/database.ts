@@ -26,7 +26,7 @@ export async function initializeDatabase(): Promise<void> {
   if (!existingSettings) {
     await db.settings.put({
       id: 'singleton',
-      theme: 'system',
+      theme: 'light',
       lastExportAt: null,
     });
   }

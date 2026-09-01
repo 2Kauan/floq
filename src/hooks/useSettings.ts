@@ -13,7 +13,7 @@ export function useSettings() {
 
   const settings = useLiveQuery(() => db.settings.get('singleton'), [isInit]);
 
-  const currentTheme = settings?.theme || 'system';
+  const currentTheme = settings?.theme || 'light';
 
   useEffect(() => {
     const root = document.documentElement;
@@ -53,7 +53,7 @@ export function useSettings() {
 
   const defaultSettings: AppSettings = {
     id: 'singleton',
-    theme: 'system',
+    theme: 'light',
     lastExportAt: null,
   };
 

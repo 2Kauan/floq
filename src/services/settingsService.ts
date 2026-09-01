@@ -6,7 +6,7 @@ export async function getSettings(): Promise<AppSettings> {
   if (!settings) {
     settings = {
       id: 'singleton',
-      theme: 'system',
+      theme: 'light',
       lastExportAt: null,
     };
     await db.settings.put(settings);
