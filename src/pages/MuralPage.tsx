@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useHighlights } from '../hooks/useHighlights';
 import { useBooks } from '../hooks/useBooks';
 import { Highlight, Book } from '../types';
@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 
 export function MuralPage() {
+  const navigate = useNavigate();
   const { highlights, isLoading: isLoadingHighlights } = useHighlights();
   const { books } = useBooks();
   const { addToast } = useToastStore();
@@ -327,9 +328,13 @@ export function MuralPage() {
           <EmptyState
             icon={<Quote className="w-8 h-8" />}
             title="Seu Mural está vazio"
-            description="Quando você destacar trechos e frases nos seus livros, todas elas aparecerão organizadas neste mural contínuo de leitura."
+            description={
+              books.length === 0
+                ? "Adicione seu primeiro livro na estante para começar a colecionar seus destaques e frases favoritas."
+                : "Quando você destacar trechos e frases nos seus livros, todas elas aparecerão organizadas neste mural contínuo de leitura."
+            }
             actionLabel="Ir para a Estante"
-            onAction={() => {}}
+            onAction={() => navigate('/')}
           />
         </div>
       ) : filteredHighlights.length === 0 ? (
