@@ -5,8 +5,10 @@ import { parseImportZip } from '../services/importService';
 import { ImportPreviewModal } from '../components/settings/ImportPreviewModal';
 import { ExportSuccessModal } from '../components/settings/ExportSuccessModal';
 import { PasteImportModal } from '../components/settings/PasteImportModal';
+import { InstallModal } from '../components/settings/InstallModal';
 import { Button } from '../components/common/Button';
 import { useToastStore } from '../store/useToastStore';
+import { usePwaInstall } from '../hooks/usePwaInstall';
 import { formatDateTime } from '../utils/date';
 import { ImportPreviewData, ThemeMode } from '../types';
 import {
@@ -19,6 +21,8 @@ import {
   Feather,
   Info,
   ClipboardPaste,
+  Smartphone,
+  CheckCircle2,
 } from 'lucide-react';
 
 export function SettingsPage() {
@@ -36,6 +40,22 @@ export function SettingsPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+
+  const { isInstallable, isStandalone, promptInstall } = usePwaInstall();
+  const [isPromptingInstall, setIsPromptingInstall] = useState(false);
+
+  const handleDirectInstall = async () => {
+    setIsPromptingInstall(true);
+    try {
+      const res = await promptInstall();
+      if (res === 'unsupported') {
+        setIsInstallModalOpen(true);
+      }
+    } finally {
+      setIsPromptingInstall(false);
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -213,6 +233,46 @@ export function SettingsPage() {
         </p>
       </section>
 
+      {/* App Installation */}
+      <section className="p-5 bg-surface border border-border rounded-xl space-y-3 shadow-2xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-accent">
+            <Smartphone className="w-5 h-5" />
+            <h2 className="text-sm font-semibold font-serif text-ink">Instalar Aplicativo</h2>
+          </div>
+          {isStandalone && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+              <CheckCircle2 className="w-3 h-3" />
+              Instalado
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-ink-muted leading-relaxed">
+          Instale o FLOQT no seu computador ou celular para abrir em janela própria com tela cheia, sem barra de endereços do navegador e com funcionamento 100% offline.
+        </p>
+        <div className="pt-2 flex flex-col sm:flex-row gap-2">
+          {isInstallable ? (
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={handleDirectInstall}
+              isLoading={isPromptingInstall}
+              leftIcon={<Download className="w-4 h-4" />}
+            >
+              Instalar FLOQT Agora
+            </Button>
+          ) : null}
+          <Button
+            variant={isInstallable ? 'secondary' : 'primary'}
+            className="flex-1"
+            onClick={() => setIsInstallModalOpen(true)}
+            leftIcon={<Smartphone className="w-4 h-4" />}
+          >
+            Ver Como Instalar no Celular ou PC
+          </Button>
+        </div>
+      </section>
+
       {/* About Application */}
       <section className="p-5 bg-bg border border-border rounded-xl flex items-center justify-between text-xs text-ink-muted">
         <div className="flex items-center gap-3">
@@ -230,6 +290,12 @@ export function SettingsPage() {
           <span>Offline-First PWA</span>
         </div>
       </section>
+
+      {/* Install Modal */}
+      <InstallModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+      />
 
       {/* Export Success Modal */}
       <ExportSuccessModal

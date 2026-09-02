@@ -1,12 +1,17 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { BookOpen, Quote, Search, Settings, Plus, Feather } from 'lucide-react';
+import { BookOpen, Quote, Search, Settings, Plus, Feather, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useBooks } from '../../hooks/useBooks';
 import { useHighlights } from '../../hooks/useHighlights';
+import { usePwaInstall } from '../../hooks/usePwaInstall';
+import { InstallModal } from '../settings/InstallModal';
 
 export function DesktopSidebar() {
   const { books } = useBooks();
   const { highlights } = useHighlights();
+  const { isStandalone, isInstallable, promptInstall } = usePwaInstall();
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const navItems = [
     { label: 'Mural', icon: Quote, path: '/mural' },
@@ -63,8 +68,28 @@ export function DesktopSidebar() {
         })}
       </nav>
 
-      {/* Library Stats */}
-      <div className="pt-4 border-t border-border mt-auto">
+      {/* Library Stats & Install CTA */}
+      <div className="pt-4 border-t border-border mt-auto space-y-3">
+        {!isStandalone && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (isInstallable) {
+                const res = await promptInstall();
+                if (res === 'unsupported') {
+                  setIsInstallModalOpen(true);
+                }
+              } else {
+                setIsInstallModalOpen(true);
+              }
+            }}
+            className="flex items-center justify-center gap-2 w-full py-2 px-3 bg-accent/10 hover:bg-accent/15 text-accent border border-accent/20 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Instalar Aplicativo</span>
+          </button>
+        )}
+
         <div className="grid grid-cols-2 gap-2 text-center p-3 rounded-lg bg-bg/60 border border-border">
           <div>
             <div className="text-lg font-serif font-bold text-ink">{books.length}</div>
@@ -76,6 +101,11 @@ export function DesktopSidebar() {
           </div>
         </div>
       </div>
+
+      <InstallModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+      />
     </aside>
   );
 }

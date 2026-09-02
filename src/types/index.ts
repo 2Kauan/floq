@@ -47,6 +47,7 @@ export interface ShelfFilters {
 
 export interface ExportBookData extends Omit<Book, 'coverId'> {
   coverFilename: string | null;
+  coverBase64?: string | null;
 }
 
 export interface ExportData {
@@ -55,6 +56,7 @@ export interface ExportData {
   books: ExportBookData[];
   highlights: Highlight[];
   settings?: AppSettings;
+  covers?: Record<string, string>;
 }
 
 export type ConflictResolutionOption = 'merge' | 'replace' | 'skip';

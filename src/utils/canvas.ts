@@ -114,3 +114,49 @@ export async function getCroppedImageBlob(
     );
   });
 }
+
+/**
+ * Converts a Blob to a base64 data URI string
+ */
+export async function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Falha ao converter Blob para Base64.'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Erro na leitura do Blob.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Converts a base64 or data URI string to a Blob
+ */
+export function base64ToBlob(base64Data: string, fallbackMime = 'image/jpeg'): Blob {
+  let mimeType = fallbackMime;
+  let byteCharacters: string;
+
+  if (base64Data.startsWith('data:')) {
+    const parts = base64Data.split(',');
+    const match = parts[0].match(/:(.*?);/);
+    if (match) {
+      mimeType = match[1];
+    }
+    byteCharacters = atob(parts[1] || '');
+  } else {
+    byteCharacters = atob(base64Data);
+  }
+
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+
+  return new Blob([byteArray], { type: mimeType });
+}
+

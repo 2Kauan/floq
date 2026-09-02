@@ -11,6 +11,7 @@ import {
   ImportPreviewData,
 } from '../types';
 import { generateId } from '../utils/id';
+import { base64ToBlob } from '../utils/canvas';
 
 function normalizeString(str: string): string {
   return (str || '').trim().toLowerCase();
@@ -26,6 +27,30 @@ export async function parseImportText(jsonText: string): Promise<ImportPreviewDa
 
   if (!exportData || !exportData.books || !Array.isArray(exportData.books)) {
     throw new Error('O JSON informado não contém uma lista de livros válida.');
+  }
+
+  // Extract cover Blobs from JSON covers dictionary and book.coverBase64
+  const coverBlobs = new Map<string, Blob>();
+  if (exportData.covers && typeof exportData.covers === 'object') {
+    for (const [filename, base64] of Object.entries(exportData.covers)) {
+      try {
+        if (base64 && typeof base64 === 'string') {
+          coverBlobs.set(filename, base64ToBlob(base64));
+        }
+      } catch {
+        // Ignore corrupted base64 string
+      }
+    }
+  }
+
+  for (const book of exportData.books) {
+    if (book.coverFilename && book.coverBase64 && !coverBlobs.has(book.coverFilename)) {
+      try {
+        coverBlobs.set(book.coverFilename, base64ToBlob(book.coverBase64));
+      } catch {
+        // Ignore
+      }
+    }
   }
 
   const existingBooks = await db.books.toArray();
@@ -64,7 +89,7 @@ export async function parseImportText(jsonText: string): Promise<ImportPreviewDa
     newBooks,
     newHighlights,
     conflicts,
-    coverBlobs: new Map(),
+    coverBlobs,
   };
 }
 
@@ -130,6 +155,25 @@ export async function parseImportZip(file: File): Promise<ImportPreviewData> {
       const filename = filePath.split('/').pop() || filePath;
       const blob = await fileEntry.async('blob');
       coverBlobs.set(filename, blob);
+    }
+  }
+
+  // Also extract any base64 covers in library.json
+  if (exportData.covers && typeof exportData.covers === 'object') {
+    for (const [filename, base64] of Object.entries(exportData.covers)) {
+      if (!coverBlobs.has(filename) && base64 && typeof base64 === 'string') {
+        try {
+          coverBlobs.set(filename, base64ToBlob(base64));
+        } catch {}
+      }
+    }
+  }
+
+  for (const book of exportData.books) {
+    if (book.coverFilename && book.coverBase64 && !coverBlobs.has(book.coverFilename)) {
+      try {
+        coverBlobs.set(book.coverFilename, base64ToBlob(book.coverBase64));
+      } catch {}
     }
   }
 
