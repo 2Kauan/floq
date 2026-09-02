@@ -84,7 +84,7 @@ export function ExportSuccessModal({
 
             <a
               href={`data:application/json;charset=utf-8,${encodeURIComponent(exportResult.jsonString)}`}
-              download={`marginalia-backup-${new Date().toISOString().split('T')[0]}.json`}
+              download={`floqt-backup-${new Date().toISOString().split('T')[0]}.json`}
               className="inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-md border border-border bg-surface text-ink hover:bg-bg transition-colors min-h-[44px]"
             >
               <FileJson className="w-4 h-4 text-accent" />

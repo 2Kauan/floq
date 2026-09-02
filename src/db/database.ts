@@ -1,7 +1,7 @@
 import Dexie, { Table } from 'dexie';
 import { Book, Highlight, CoverImage, AppSettings } from '../types';
 
-export class MarginaliaDatabase extends Dexie {
+export class FloqtDatabase extends Dexie {
   books!: Table<Book, string>;
   highlights!: Table<Highlight, string>;
   coverImages!: Table<CoverImage, string>;
@@ -18,7 +18,7 @@ export class MarginaliaDatabase extends Dexie {
   }
 }
 
-export const db = new MarginaliaDatabase();
+export const db = new FloqtDatabase();
 
 // Initialize singleton settings if absent
 export async function initializeDatabase(): Promise<void> {

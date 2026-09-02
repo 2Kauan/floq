@@ -100,7 +100,7 @@ export function HighlightExpandedModal({
         {highlight.comment && (
           <div className="mt-4 p-4 bg-bg/70 border-l-4 border-accent rounded-r-lg">
             <span className="block text-[11px] font-semibold uppercase tracking-wider text-ink-muted mb-1">
-              Marginália / Reflexão
+              Reflexão / Anotação Pessoal
             </span>
             <p className="text-sm text-ink leading-relaxed font-sans">
               {highlight.comment}

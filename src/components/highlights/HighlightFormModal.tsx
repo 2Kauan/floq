@@ -187,7 +187,7 @@ export function HighlightFormModal({
         {/* Personal Reflection / Margin Note */}
         <div>
           <label htmlFor="highlight-comment" className="block text-sm font-medium text-ink mb-1">
-            Marginália / Reflexão Pessoal (opcional)
+            Reflexão / Anotação Pessoal (opcional)
           </label>
           <textarea
             id="highlight-comment"

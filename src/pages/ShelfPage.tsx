@@ -91,7 +91,7 @@ export function ShelfPage() {
         <EmptyState
           icon={<BookOpen className="w-8 h-8" />}
           title="Sua estante está vazia"
-          description="Adicione seu primeiro livro e comece a colecionar os trechos, frases e marginálias que te marcaram."
+          description="Adicione seu primeiro livro e comece a colecionar os trechos, frases e reflexões que te marcaram."
           actionLabel="Adicionar primeiro livro"
           onAction={() => navigate('/books/new')}
         />
