@@ -3,15 +3,23 @@ import { db } from '../db/database';
 
 export function useHighlights(bookId?: string) {
   const highlights = useLiveQuery(
-    () => {
-      if (bookId) {
-        return db.highlights
-          .where('bookId')
-          .equals(bookId)
-          .reverse()
-          .sortBy('createdAt');
-      }
-      return db.highlights.reverse().sortBy('createdAt');
+    async () => {
+      let list = bookId
+        ? await db.highlights.where('bookId').equals(bookId).toArray()
+        : await db.highlights.toArray();
+
+      return list.sort((a, b) => {
+        const hasOrderA = typeof a.order === 'number';
+        const hasOrderB = typeof b.order === 'number';
+
+        if (hasOrderA && hasOrderB) {
+          return (a.order as number) - (b.order as number);
+        }
+        if (hasOrderA) return -1;
+        if (hasOrderB) return 1;
+
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
     },
     [bookId]
   );

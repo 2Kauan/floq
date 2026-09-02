@@ -77,3 +77,11 @@ export async function updateHighlight(
 export async function deleteHighlight(id: string): Promise<void> {
   await db.highlights.delete(id);
 }
+
+export async function reorderHighlights(orderedHighlightIds: string[]): Promise<void> {
+  await db.transaction('rw', db.highlights, async () => {
+    for (let i = 0; i < orderedHighlightIds.length; i++) {
+      await db.highlights.update(orderedHighlightIds[i], { order: i });
+    }
+  });
+}

@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBook } from '../hooks/useBooks';
 import { useHighlights } from '../hooks/useHighlights';
 import { useCoverImage } from '../hooks/useCoverImage';
 import { deleteBook } from '../services/bookService';
-import { deleteHighlight } from '../services/highlightService';
+import { deleteHighlight, reorderHighlights } from '../services/highlightService';
 import { CoverPlaceholder } from '../components/shelf/CoverPlaceholder';
 import { HighlightCard } from '../components/highlights/HighlightCard';
 import { HighlightFormModal } from '../components/highlights/HighlightFormModal';
@@ -25,6 +25,8 @@ import {
   Calendar,
   Bookmark,
   Tag as TagIcon,
+  GripVertical,
+  Check,
 } from 'lucide-react';
 
 export function BookDetailPage() {
@@ -38,6 +40,17 @@ export function BookDetailPage() {
 
   // Search inside this book's highlights
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Reorder mode state
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderedList, setReorderedList] = useState<Highlight[]>([]);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isReorderMode) {
+      setReorderedList(highlights);
+    }
+  }, [highlights, isReorderMode]);
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -121,31 +134,95 @@ export function BookDetailPage() {
     }
   };
 
+  const handleToggleReorder = async () => {
+    if (isReorderMode) {
+      try {
+        const ids = reorderedList.map((h) => h.id);
+        await reorderHighlights(ids);
+        addToast({
+          type: 'success',
+          message: 'Ordem dos destaques salva com sucesso!',
+        });
+      } catch {
+        addToast({
+          type: 'error',
+          message: 'Erro ao salvar a nova ordem.',
+        });
+      }
+      setIsReorderMode(false);
+    } else {
+      setReorderedList([...highlights]);
+      setIsReorderMode(true);
+      setSearchQuery('');
+    }
+  };
+
+  const moveHighlight = async (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= reorderedList.length) return;
+    const updated = [...reorderedList];
+    const [moved] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, moved);
+    setReorderedList(updated);
+    try {
+      await reorderHighlights(updated.map((h) => h.id));
+    } catch {}
+  };
+
+  const handleDragStart = (idx: number, e: React.DragEvent) => {
+    setDraggingIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    try {
+      e.dataTransfer.setData('text/plain', String(idx));
+    } catch {}
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (toIdx: number, e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggingIdx === null || draggingIdx === toIdx) {
+      setDraggingIdx(null);
+      return;
+    }
+    await moveHighlight(draggingIdx, toIdx);
+    setDraggingIdx(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingIdx(null);
+  };
+
+  const displayList = isReorderMode ? reorderedList : filteredHighlights;
+
   return (
-    <div className="flex flex-col space-y-8 pb-12">
-      {/* Top Action Bar */}
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col space-y-8 pb-12 animate-fade-in-up">
+      {/* Top Breadcrumb & Action Bar */}
+      <div className="flex items-center justify-between gap-4">
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink p-2 rounded-lg hover:bg-surface border border-transparent hover:border-border transition-colors"
-          aria-label="Voltar para a Estante"
+          className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition-colors font-medium py-1 px-2 -ml-2 rounded-md hover:bg-surface"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar para Estante</span>
         </Link>
 
         <div className="flex items-center gap-2">
-          <Link
-            to={`/books/${book.id}/edit`}
-            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-border bg-surface text-ink hover:bg-bg transition-colors"
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate(`/books/${book.id}/edit`)}
+            leftIcon={<Edit className="w-3.5 h-3.5" />}
+            className="text-xs min-h-[36px]"
           >
-            <Edit className="w-3.5 h-3.5" />
-            <span>Editar</span>
-          </Link>
+            Editar
+          </Button>
 
           <Button
-            size="sm"
             variant="ghost"
+            size="sm"
             onClick={() => setIsDeleteBookOpen(true)}
             leftIcon={<Trash2 className="w-3.5 h-3.5 text-destructive" />}
             className="text-destructive hover:bg-destructive/10 text-xs min-h-[36px]"
@@ -229,24 +306,63 @@ export function BookDetailPage() {
               Destaques Literários
             </h2>
             <span className="text-xs bg-bg border border-border px-2 py-0.5 rounded-full text-ink-muted">
-              {filteredHighlights.length}
+              {displayList.length}
             </span>
           </div>
 
-          <Button
-            variant="primary"
-            onClick={() => {
-              setHighlightToEdit(null);
-              setIsFormOpen(true);
-            }}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Novo Destaque
-          </Button>
+          <div className="flex items-center gap-2">
+            {highlights.length >= 2 && (
+              <Button
+                variant={isReorderMode ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={handleToggleReorder}
+                leftIcon={
+                  isReorderMode ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <GripVertical className="w-4 h-4 text-accent" />
+                  )
+                }
+              >
+                {isReorderMode ? 'Concluir Ordem' : 'Reordenar Destaques'}
+              </Button>
+            )}
+
+            {!isReorderMode && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setHighlightToEdit(null);
+                  setIsFormOpen(true);
+                }}
+                leftIcon={<Plus className="w-4 h-4" />}
+              >
+                Novo Destaque
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Search within highlights if more than 2 highlights */}
-        {highlights.length > 2 && (
+        {/* Reorder Mode Helper Banner */}
+        {isReorderMode && (
+          <div className="p-3.5 bg-accent/10 border border-accent/30 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-ink animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded bg-accent text-white shrink-0">
+                <GripVertical className="w-3.5 h-3.5" />
+              </div>
+              <p>
+                <strong>Modo de Reordenação:</strong> Segure e arraste os cards ou use as setas para ordenar livremente.
+              </p>
+            </div>
+            <Button size="sm" variant="primary" onClick={handleToggleReorder} className="self-end sm:self-auto shrink-0">
+              Salvar Ordem
+            </Button>
+          </div>
+        )}
+
+        {/* Search within highlights if more than 2 highlights and not in reorder mode */}
+        {!isReorderMode && highlights.length > 2 && (
           <div className="relative w-full">
             <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -283,7 +399,7 @@ export function BookDetailPage() {
               }}
             />
           </div>
-        ) : filteredHighlights.length === 0 ? (
+        ) : displayList.length === 0 ? (
           <div className="p-8 bg-surface border border-border rounded-xl text-center">
             <p className="text-sm text-ink-muted">Nenhum trecho encontrado com "{searchQuery}".</p>
             <Button
@@ -297,10 +413,21 @@ export function BookDetailPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredHighlights.map((highlight) => (
+            {displayList.map((highlight, idx) => (
               <HighlightCard
                 key={highlight.id}
                 highlight={highlight}
+                index={idx}
+                isReorderMode={isReorderMode}
+                onMoveUp={() => moveHighlight(idx, idx - 1)}
+                onMoveDown={() => moveHighlight(idx, idx + 1)}
+                canMoveUp={idx > 0}
+                canMoveDown={idx < displayList.length - 1}
+                onDragStart={(e) => handleDragStart(idx, e)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(idx, e)}
+                onDragEnd={handleDragEnd}
+                isDragging={draggingIdx === idx}
                 onExpand={(h) => setExpandedHighlight(h)}
                 onEdit={(h) => {
                   setHighlightToEdit(h);

@@ -17,6 +17,7 @@ export interface Highlight {
   page: number | null;
   comment: string | null;
   tags: string[];
+  order?: number;
   createdAt: string; // ISO8601
   updatedAt: string; // ISO8601
 }
