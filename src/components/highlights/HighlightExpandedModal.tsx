@@ -75,25 +75,17 @@ export function HighlightExpandedModal({
           </div>
         )}
 
-        {/* Large Decorative Serif Quote */}
-        <div className="relative px-4 py-3 sm:px-6 sm:py-4">
-          <span
-            className="absolute -top-6 -left-2 text-7xl font-serif text-accent/20 select-none pointer-events-none"
-            aria-hidden="true"
-          >
-            “
-          </span>
-
-          <blockquote className="relative z-10 text-lg sm:text-xl font-serif text-ink leading-relaxed italic">
+        {/* Serif Quote */}
+        <div className="relative px-3 sm:px-5 py-3 sm:py-4 my-1">
+          <blockquote className="text-lg sm:text-xl font-serif text-ink leading-relaxed italic">
+            <span className="text-2xl sm:text-3xl text-accent font-serif font-bold mr-1.5 select-none opacity-80">
+              “
+            </span>
             {highlight.text}
+            <span className="text-2xl sm:text-3xl text-accent font-serif font-bold ml-1.5 select-none opacity-80">
+              ”
+            </span>
           </blockquote>
-
-          <span
-            className="block text-right text-7xl font-serif text-accent/20 select-none pointer-events-none -mt-4"
-            aria-hidden="true"
-          >
-            ”
-          </span>
         </div>
 
         {/* Reflection / Margin Note */}
