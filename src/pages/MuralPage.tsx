@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useHighlights } from '../hooks/useHighlights';
 import { useBooks } from '../hooks/useBooks';
 import { Highlight, Book } from '../types';
-import { deleteHighlight } from '../services/highlightService';
+import { deleteHighlight, reorderHighlights } from '../services/highlightService';
 import { HighlightFormModal } from '../components/highlights/HighlightFormModal';
 import { HighlightExpandedModal } from '../components/highlights/HighlightExpandedModal';
 import { ConfirmModal } from '../components/common/ConfirmModal';
@@ -26,6 +26,9 @@ import {
   MessageSquare,
   ArrowUpDown,
   Filter,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 
 export function MuralPage() {
@@ -40,6 +43,17 @@ export function MuralPage() {
   const [sortBy, setSortBy] = useState<'recent' | 'oldest' | 'book'>('recent');
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Reorder mode state
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const [reorderedList, setReorderedList] = useState<Highlight[]>([]);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isReorderMode) {
+      setReorderedList(highlights);
+    }
+  }, [highlights, isReorderMode]);
 
   // Modals state
   const [expandedHighlight, setExpandedHighlight] = useState<Highlight | null>(null);
@@ -174,6 +188,69 @@ export function MuralPage() {
     }
   };
 
+  const handleToggleReorder = async () => {
+    if (isReorderMode) {
+      try {
+        const ids = reorderedList.map((h) => h.id);
+        await reorderHighlights(ids);
+        addToast({
+          type: 'success',
+          message: 'Ordem do mural salva com sucesso!',
+        });
+      } catch {
+        addToast({
+          type: 'error',
+          message: 'Erro ao salvar a nova ordem.',
+        });
+      }
+      setIsReorderMode(false);
+    } else {
+      setReorderedList([...highlights]);
+      setIsReorderMode(true);
+      setSearchQuery('');
+      setSelectedTag(null);
+      setSelectedBookId(null);
+    }
+  };
+
+  const moveHighlight = async (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= reorderedList.length) return;
+    const updated = [...reorderedList];
+    const [moved] = updated.splice(fromIdx, 1);
+    updated.splice(toIdx, 0, moved);
+    setReorderedList(updated);
+    try {
+      await reorderHighlights(updated.map((h) => h.id));
+    } catch {}
+  };
+
+  const handleDragStart = (idx: number, e: React.DragEvent) => {
+    setDraggingIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    try {
+      e.dataTransfer.setData('text/plain', String(idx));
+    } catch {}
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (toIdx: number, e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggingIdx === null || draggingIdx === toIdx) {
+      setDraggingIdx(null);
+      return;
+    }
+    await moveHighlight(draggingIdx, toIdx);
+    setDraggingIdx(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingIdx(null);
+  };
+
   const activeFiltersCount =
     (selectedTag ? 1 : 0) + (selectedBookId ? 1 : 0) + (searchQuery ? 1 : 0);
 
@@ -186,6 +263,8 @@ export function MuralPage() {
   if (isLoadingHighlights) {
     return <div className="p-12 text-center text-ink-muted">Carregando mural...</div>;
   }
+
+  const displayList = isReorderMode ? reorderedList : filteredHighlights;
 
   return (
     <div className="flex flex-col space-y-6 pb-12">
@@ -205,21 +284,56 @@ export function MuralPage() {
           </p>
         </div>
 
-        {highlights.length > 0 && (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleRandomQuote}
-            leftIcon={<Shuffle className="w-3.5 h-3.5 text-accent" />}
-            className="self-start sm:self-auto"
-          >
-            Sortear Citação
-          </Button>
-        )}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {highlights.length >= 2 && (
+            <Button
+              size="sm"
+              variant={isReorderMode ? 'primary' : 'secondary'}
+              onClick={handleToggleReorder}
+              leftIcon={
+                isReorderMode ? (
+                  <Check className="w-3.5 h-3.5" />
+                ) : (
+                  <GripVertical className="w-3.5 h-3.5 text-accent" />
+                )
+              }
+            >
+              {isReorderMode ? 'Concluir Ordem' : 'Reordenar Mural'}
+            </Button>
+          )}
+
+          {highlights.length > 0 && !isReorderMode && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleRandomQuote}
+              leftIcon={<Shuffle className="w-3.5 h-3.5 text-accent" />}
+            >
+              Sortear Citação
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Main Search & Filter Bar */}
-      {highlights.length > 0 && (
+      {/* Reorder Mode Helper Banner */}
+      {isReorderMode && (
+        <div className="p-3.5 bg-accent/10 border border-accent/30 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-ink animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded bg-accent text-white shrink-0">
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
+            <p>
+              <strong>Modo de Reordenação do Mural:</strong> Segure e arraste os cards ou use as setas para posicionar as citações na ordem que desejar.
+            </p>
+          </div>
+          <Button size="sm" variant="primary" onClick={handleToggleReorder} className="self-end sm:self-auto shrink-0">
+            Salvar Ordem
+          </Button>
+        </div>
+      )}
+
+      {/* Main Search & Filter Bar (hidden when reordering) */}
+      {!isReorderMode && highlights.length > 0 && (
         <div className="space-y-3">
           {/* Search Bar */}
           <div className="relative w-full">
@@ -337,7 +451,7 @@ export function MuralPage() {
             onAction={() => navigate('/')}
           />
         </div>
-      ) : filteredHighlights.length === 0 ? (
+      ) : displayList.length === 0 ? (
         <div className="p-12 bg-surface border border-border rounded-xl text-center">
           <p className="text-base font-serif font-semibold text-ink mb-1">
             Nenhuma frase encontrada
@@ -350,38 +464,90 @@ export function MuralPage() {
           </Button>
         </div>
       ) : (
-        /* Masonry-style Grid of Quotes */
+        /* Grid of Quotes */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {filteredHighlights.map((h) => {
+          {displayList.map((h, idx) => {
             const parentBook = bookMap.get(h.bookId);
             const isCopied = copiedId === h.id;
+            const isDragging = draggingIdx === idx;
 
             return (
               <article
                 key={h.id}
-                onClick={() => setExpandedHighlight(h)}
-                className="group relative p-5 bg-surface border border-border rounded-2xl shadow-2xs hover:shadow-md hover:border-accent/40 transition-all duration-150 flex flex-col justify-between cursor-pointer"
+                draggable={isReorderMode}
+                onDragStart={(e) => handleDragStart(idx, e)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(idx, e)}
+                onDragEnd={handleDragEnd}
+                onClick={() => {
+                  if (!isReorderMode) {
+                    setExpandedHighlight(h);
+                  }
+                }}
+                className={`group relative p-5 bg-surface border rounded-2xl shadow-2xs transition-all duration-150 flex flex-col justify-between select-none ${
+                  isDragging
+                    ? 'opacity-40 scale-95 border-dashed border-accent bg-accent/5'
+                    : isReorderMode
+                    ? 'border-accent/40 hover:border-accent cursor-grab active:cursor-grabbing hover:bg-surface/90 shadow-sm'
+                    : 'border-border hover:shadow-md hover:border-accent/40 cursor-pointer'
+                }`}
               >
                 <div>
-                  {/* Book Context Header */}
-                  {parentBook && (
-                    <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-border/60">
-                      <Link
-                        to={`/books/${parentBook.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent font-medium line-clamp-1 group/link"
-                      >
-                        <BookOpen className="w-3.5 h-3.5 text-accent shrink-0" />
-                        <span className="line-clamp-1">{parentBook.title}</span>
-                      </Link>
-
-                      {h.page && (
-                        <span className="text-[10px] bg-bg border border-border text-ink-muted font-semibold px-2 py-0.5 rounded-full shrink-0">
-                          p. {h.page}
+                  {/* Book Context Header / Reorder Handle */}
+                  <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-border/60">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {isReorderMode && (
+                        <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20 shrink-0">
+                          <GripVertical className="w-3.5 h-3.5 text-accent shrink-0" />
+                          <span>#{idx + 1}</span>
                         </span>
                       )}
+
+                      {parentBook && (
+                        <Link
+                          to={`/books/${parentBook.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1.5 text-xs text-ink-muted hover:text-accent font-medium line-clamp-1 group/link"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-accent shrink-0" />
+                          <span className="line-clamp-1">{parentBook.title}</span>
+                        </Link>
+                      )}
                     </div>
-                  )}
+
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {isReorderMode ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => moveHighlight(idx, idx - 1)}
+                            aria-label="Mover para cima"
+                            className="p-1 rounded bg-bg border border-border text-ink-muted hover:text-ink hover:border-accent disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                            title="Mover para cima"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === displayList.length - 1}
+                            onClick={() => moveHighlight(idx, idx + 1)}
+                            aria-label="Mover para baixo"
+                            className="p-1 rounded bg-bg border border-border text-ink-muted hover:text-ink hover:border-accent disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                            title="Mover para baixo"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        h.page && (
+                          <span className="text-[10px] bg-bg border border-border text-ink-muted font-semibold px-2 py-0.5 rounded-full shrink-0">
+                            p. {h.page}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </div>
 
                   {/* Serif Quote Text */}
                   <blockquote className="text-base font-serif text-ink italic leading-relaxed line-clamp-6 mb-3">
@@ -417,54 +583,56 @@ export function MuralPage() {
                   <div className="flex items-center justify-between pt-3 border-t border-border/50 text-[11px] text-ink-muted">
                     <span>{formatDate(h.createdAt)}</span>
 
-                    <div
-                      className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopyQuote(h, e)}
-                        title="Copiar citação"
-                        aria-label="Copiar citação"
-                        className="p-1.5 rounded-md hover:bg-bg text-ink-muted hover:text-ink transition-colors"
+                    {!isReorderMode && (
+                      <div
+                        className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {isCopied ? (
-                          <Check className="w-3.5 h-3.5 text-success" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopyQuote(h, e)}
+                          title="Copiar citação"
+                          aria-label="Copiar citação"
+                          className="p-1.5 rounded-md hover:bg-bg text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                        >
+                          {isCopied ? (
+                            <Check className="w-3.5 h-3.5 text-success" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setExpandedHighlight(h)}
-                        title="Expandir citação"
-                        aria-label="Expandir citação"
-                        className="p-1.5 rounded-md hover:bg-bg text-ink-muted hover:text-ink transition-colors"
-                      >
-                        <Maximize2 className="w-3.5 h-3.5" />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedHighlight(h)}
+                          title="Expandir citação"
+                          aria-label="Expandir citação"
+                          className="p-1.5 rounded-md hover:bg-bg text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setHighlightToEdit(h)}
-                        title="Editar"
-                        aria-label="Editar destaque"
-                        className="p-1.5 rounded-md hover:bg-bg text-ink-muted hover:text-ink transition-colors"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setHighlightToEdit(h)}
+                          title="Editar"
+                          aria-label="Editar destaque"
+                          className="p-1.5 rounded-md hover:bg-bg text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setHighlightToDelete(h)}
-                        title="Excluir"
-                        aria-label="Excluir destaque"
-                        className="p-1.5 rounded-md hover:bg-destructive/10 text-ink-muted hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => setHighlightToDelete(h)}
+                          title="Excluir"
+                          aria-label="Excluir destaque"
+                          className="p-1.5 rounded-md hover:bg-destructive/10 text-ink-muted hover:text-destructive transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </article>
